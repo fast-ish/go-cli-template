@@ -1,0 +1,337 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: go-cli-template
+  title: Go CLI Tool (Golden Path)
+  description: Production-ready Go CLI with AI capabilities, structured logging, and DevOps integrations
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - go
+    - cli
+    - golden-path
+    - recommended
+    - ai-enabled
+spec:
+  owner: platform-team
+  type: tool
+
+  parameters:
+    # ==================== PROJECT INFO ====================
+    - title: Project Information
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: CLI Name
+          type: string
+          description: Name of the CLI tool (lowercase, hyphens allowed)
+          pattern: '^[a-z][a-z0-9-]*$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Short description of what this CLI does
+        owner:
+          title: Owner
+          type: string
+          description: Team that owns this CLI
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    # ==================== GO RUNTIME ====================
+    - title: Go Runtime
+      properties:
+        goVersion:
+          title: Go Version
+          type: string
+          description: Go version to use
+          default: "1.23"
+          enum:
+            - "1.23"
+            - "1.22"
+            - "1.21"
+          enumNames:
+            - "1.23 (Latest - Recommended)"
+            - "1.22 (LTS)"
+            - "1.21 (Previous LTS)"
+
+    # ==================== CLI FRAMEWORK ====================
+    - title: CLI Framework & Features
+      properties:
+        cliFramework:
+          title: CLI Framework
+          type: string
+          description: Command-line framework to use
+          default: cobra
+          enum:
+            - cobra
+            - urfave
+          enumNames:
+            - "Cobra + Viper (Recommended - industry standard)"
+            - "urfave/cli v2 (simpler, less boilerplate)"
+        outputFormat:
+          title: Output Formatting
+          type: string
+          description: Output formatting library
+          default: charm
+          enum:
+            - charm
+            - tablewriter
+            - plain
+          enumNames:
+            - "Charm Stack (lipgloss, bubbles, huh) - Modern TUI"
+            - "tablewriter - Simple tables"
+            - "Plain text only"
+        configFormat:
+          title: Configuration Format
+          type: string
+          description: Configuration file format support
+          default: yaml
+          enum:
+            - yaml
+            - toml
+            - json
+            - all
+          enumNames:
+            - "YAML only"
+            - "TOML only"
+            - "JSON only"
+            - "All formats (YAML, TOML, JSON)"
+
+    # ==================== AI INTEGRATION ====================
+    - title: AI Integration
+      properties:
+        aiProvider:
+          title: AI Provider
+          type: string
+          description: AI/LLM provider for intelligent features
+          default: bedrock
+          enum:
+            - bedrock
+            - openai
+            - anthropic
+            - ollama
+            - none
+          enumNames:
+            - "AWS Bedrock (Claude, Llama) - Recommended for AWS"
+            - "OpenAI (GPT-4, GPT-3.5)"
+            - "Anthropic API (Claude direct)"
+            - "Ollama (Local models)"
+            - "None"
+        aiFeatures:
+          title: AI Features
+          type: array
+          description: AI-powered features to include
+          items:
+            type: string
+            enum:
+              - chat
+              - analyze
+              - summarize
+              - generate
+          uniqueItems: true
+          ui:widget: checkboxes
+      dependencies:
+        aiFeatures:
+          oneOf:
+            - properties:
+                aiProvider:
+                  const: none
+              required: []
+            - properties:
+                aiProvider:
+                  not:
+                    const: none
+              required:
+                - aiFeatures
+
+    # ==================== SERVICE INTEGRATIONS ====================
+    - title: Service Integrations
+      properties:
+        integrations:
+          title: Service Integrations
+          type: array
+          description: External services this CLI will interact with
+          items:
+            type: string
+            enum:
+              - aws
+              - github
+              - kubernetes
+              - grafana
+              - slack
+              - notion
+              - argocd
+              - terraform
+          uniqueItems: true
+          ui:widget: checkboxes
+
+    # ==================== OBSERVABILITY ====================
+    - title: Observability
+      properties:
+        logging:
+          title: Logging Library
+          type: string
+          description: Structured logging implementation
+          default: slog
+          enum:
+            - slog
+            - zap
+            - zerolog
+          enumNames:
+            - "slog (stdlib, Go 1.21+) - Recommended"
+            - "uber-go/zap (high performance)"
+            - "zerolog (zero allocation)"
+        metrics:
+          title: Metrics
+          type: boolean
+          description: Include Prometheus metrics endpoint
+          default: false
+        tracing:
+          title: Distributed Tracing
+          type: boolean
+          description: Include OpenTelemetry tracing
+          default: false
+
+    # ==================== TESTING ====================
+    - title: Testing & Quality
+      properties:
+        testFramework:
+          title: Test Framework
+          type: string
+          description: Testing approach
+          default: standard
+          enum:
+            - standard
+            - testify
+            - ginkgo
+          enumNames:
+            - "Standard library (testing) - Recommended"
+            - "testify (assertions, mocks)"
+            - "Ginkgo/Gomega (BDD style)"
+        includeMocks:
+          title: Include Mocking
+          type: boolean
+          description: Include mock generation with mockery
+          default: true
+        includeE2E:
+          title: Include E2E Tests
+          type: boolean
+          description: Include end-to-end test framework
+          default: false
+
+    # ==================== BUILD & RELEASE ====================
+    - title: Build & Release
+      properties:
+        releaseType:
+          title: Release Strategy
+          type: string
+          description: How releases are created
+          default: goreleaser
+          enum:
+            - goreleaser
+            - makefile
+          enumNames:
+            - "GoReleaser (cross-platform, homebrew) - Recommended"
+            - "Makefile only (simple)"
+        platforms:
+          title: Target Platforms
+          type: array
+          description: Platforms to build for
+          default:
+            - linux-amd64
+            - darwin-arm64
+          items:
+            type: string
+            enum:
+              - linux-amd64
+              - linux-arm64
+              - darwin-amd64
+              - darwin-arm64
+              - windows-amd64
+          uniqueItems: true
+          ui:widget: checkboxes
+        dockerize:
+          title: Include Dockerfile
+          type: boolean
+          description: Include multi-stage Dockerfile
+          default: true
+        homebrew:
+          title: Homebrew Formula
+          type: boolean
+          description: Generate Homebrew formula for macOS/Linux
+          default: true
+
+    # ==================== REPOSITORY ====================
+    - title: Repository Settings
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            allowedOwners:
+              - fast-ish
+
+  steps:
+    - id: fetch-skeleton
+      name: Fetch Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          goVersion: ${{ parameters.goVersion }}
+          cliFramework: ${{ parameters.cliFramework }}
+          outputFormat: ${{ parameters.outputFormat }}
+          configFormat: ${{ parameters.configFormat }}
+          aiProvider: ${{ parameters.aiProvider }}
+          aiFeatures: ${{ parameters.aiFeatures }}
+          integrations: ${{ parameters.integrations }}
+          logging: ${{ parameters.logging }}
+          metrics: ${{ parameters.metrics }}
+          tracing: ${{ parameters.tracing }}
+          testFramework: ${{ parameters.testFramework }}
+          includeMocks: ${{ parameters.includeMocks }}
+          includeE2E: ${{ parameters.includeE2E }}
+          releaseType: ${{ parameters.releaseType }}
+          platforms: ${{ parameters.platforms }}
+          dockerize: ${{ parameters.dockerize }}
+          homebrew: ${{ parameters.homebrew }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        protectDefaultBranch: false
+        repoVisibility: private
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

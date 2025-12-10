@@ -1,0 +1,178 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{values.name}}
+  labels:
+    app: ${{values.name}}
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ${{values.name}}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ${{values.name}}
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ${{values.name}}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: ${{values.name}}
+          image: ghcr.io/fast-ish/${{values.name}}:latest
+          imagePullPolicy: IfNotPresent
+
+          command: ["${{values.name}}"]
+          args: ["--config", "/config/config.yaml"]
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+
+          env:
+            - name: LOG_LEVEL
+              value: "info"
+            - name: LOG_FORMAT
+              value: "json"
+{%- if values.aiProvider == "bedrock" %}
+            - name: AWS_REGION
+              value: "us-west-2"
+{%- elif values.aiProvider == "openai" %}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ${{values.name}}-secrets
+                  key: openai-api-key
+{%- elif values.aiProvider == "anthropic" %}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ${{values.name}}-secrets
+                  key: anthropic-api-key
+{%- endif %}
+{%- if "github" in values.integrations %}
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ${{values.name}}-secrets
+                  key: github-token
+{%- endif %}
+{%- if "slack" in values.integrations %}
+            - name: SLACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ${{values.name}}-secrets
+                  key: slack-token
+{%- endif %}
+
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+
+{%- if values.metrics %}
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+{%- endif %}
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+      volumes:
+        - name: config
+          configMap:
+            name: ${{values.name}}-config
+        - name: tmp
+          emptyDir: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - ${{values.name}}
+                topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ${{values.name}}
+  labels:
+    app: ${{values.name}}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${{values.name}}-config
+  labels:
+    app: ${{values.name}}
+data:
+  config.yaml: |
+    logging:
+      level: info
+      format: json
+{%- if values.metrics %}
+    metrics:
+      enabled: true
+      port: 9090
+{%- endif %}
+{%- if values.tracing %}
+    tracing:
+      enabled: true
+      endpoint: http://otel-collector:4318
+{%- endif %}

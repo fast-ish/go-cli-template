@@ -1,0 +1,36 @@
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+*.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Tests
+*_test.go
+coverage.out
+coverage.html
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Development
+.env
+.env.local
+tmp/
+vendor/
+
+# CI/CD
+.github/

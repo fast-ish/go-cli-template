@@ -1,0 +1,38 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{values.name}}
+  description: ${{values.description}}
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: fast-ish/${{values.name}}
+{%- if values.metrics %}
+    prometheus.io/rule: ${{values.name}}
+{%- endif %}
+{%- if "grafana" in values.integrations %}
+    grafana.com/dashboard-selector: app=${{values.name}}
+{%- endif %}
+  tags:
+    - go
+    - cli
+{%- if values.aiProvider != "none" %}
+    - ai-enabled
+    - {{values.aiProvider}}
+{%- endif %}
+{%- for integration in values.integrations %}
+    - {{integration}}
+{%- endfor %}
+  links:
+    - url: https://github.com/fast-ish/${{values.name}}
+      title: Repository
+      icon: github
+{%- if values.metrics %}
+    - url: http://localhost:9090/metrics
+      title: Metrics
+      icon: prometheus
+{%- endif %}
+spec:
+  type: tool
+  lifecycle: production
+  owner: ${{values.owner}}
+  system: platform
