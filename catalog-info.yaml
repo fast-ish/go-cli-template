@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: go-cli-template
+  description: Production-ready Go CLI template with AI integration and modular architecture
+spec:
+  targets:
+    - ./template.yaml

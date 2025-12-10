@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${{values.name}}
+  labels:
+    app: ${{values.name}}
+spec:
+  type: ClusterIP
+  selector:
+    app: ${{values.name}}
+  ports:
+{%- if values.metrics %}
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+{%- else %}
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+{%- endif %}
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
