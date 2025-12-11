@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "golang.go",
+    "editorconfig.editorconfig",
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker",
+    "davidanson.vscode-markdownlint",
+    "github.vscode-pull-request-github"
+  ]
+}
