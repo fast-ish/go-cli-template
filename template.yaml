@@ -320,6 +320,10 @@ spec:
         defaultBranch: main
         protectDefaultBranch: false
         repoVisibility: private
+        topics:
+          - go
+          - cli
+          - ${{ parameters.owner }}
 
     - id: register
       name: Register in Catalog
@@ -328,6 +332,33 @@ spec:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
 
+    - id: create-gitops-pr
+      name: Create GitOps Pull Request
+      if: ${{ parameters.dockerize }}
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=fast-ish&repo=aws-idp-gitops
+        branchName: add-app-${{ parameters.name }}
+        title: "feat(${{ parameters.name }}): add new go cli"
+        description: |
+          ## New Application: ${{ parameters.name }}
+
+          This PR adds a new Go CLI tool to the GitOps repository.
+
+          ### Application Details
+          | Property | Value |
+          |----------|-------|
+          | **Name** | ${{ parameters.name }} |
+          | **Owner** | ${{ parameters.owner }} |
+          | **Type** | Go CLI |
+          | **Go Version** | ${{ parameters.goVersion }} |
+          | **Dockerized** | ${{ parameters.dockerize }} |
+
+          ---
+          *Created via Backstage Go CLI Template*
+        sourcePath: k8s
+        targetPath: teams/${{ parameters.owner | replace("group:", "") | replace("team-", "") }}/apps/${{ parameters.name }}
+
   output:
     links:
       - title: Repository
@@ -335,3 +366,6 @@ spec:
       - title: Open in Catalog
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
+      - title: GitHub Releases
+        icon: github
+        url: ${{ steps['publish'].output.remoteUrl }}/releases

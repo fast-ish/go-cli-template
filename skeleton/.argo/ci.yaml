@@ -1,0 +1,21 @@
+# =============================================================================
+# ARGO CI CONFIGURATION
+# =============================================================================
+language: go
+team: ${{values.owner | replace("group:", "") | replace("team-", "")}}
+
+config:
+  go-version: "${{values.goVersion}}"
+  skip-tests: false
+{%- if values.dockerize %}
+  build-type: docker
+  deploy-enabled: true
+  rollout-strategy: canary
+{%- else %}
+  build-type: goreleaser
+  deploy-enabled: false
+{%- endif %}
+
+  analysis:
+    success-rate-threshold: "0.95"
+    latency-p99-threshold: "100"
